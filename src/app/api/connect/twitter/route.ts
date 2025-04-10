@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getTwitterUserByUsername } from '@/lib/twitter-api';
+import { 
+  getTwitterUserByUsername, 
+  getTwitterAuthUrl
+} from '@/lib/twitter-api';
 import { saveTwitterInfo, getUserFromRedis } from '@/lib/redis';
 import type { NextRequest } from 'next/server';
 
 /**
- * GET: 現在の認証ユーザーのTwitter連携情報を取得
+ * GET: 現在の認証ユーザーのTwitter連携情報を取得または認証フローを開始
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // クエリパラメータを確認
+    const { searchParams } = new URL(req.url);
+    const startOAuth = searchParams.get('oauth');
+    
     // 認証情報を取得
     const { userId } = await auth();
     
@@ -19,7 +26,24 @@ export async function GET() {
       );
     }
 
-    // Redisからユーザーデータを取得
+    // OAuth認証フローを開始する場合
+    if (startOAuth === 'true') {
+      try {
+        // Twitter認証URLを取得
+        const authUrl = await getTwitterAuthUrl();
+        
+        // リダイレクト
+        return NextResponse.redirect(authUrl);
+      } catch (error) {
+        console.error('OAuth initialization error:', error);
+        return NextResponse.json(
+          { error: 'Failed to initialize OAuth flow' },
+          { status: 500 }
+        );
+      }
+    }
+    
+    // 通常のGETリクエスト（連携情報取得）
     const userData = await getUserFromRedis(userId);
     
     if (!userData || !userData.platforms.twitter) {
@@ -59,10 +83,21 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-
+    
     // リクエストボディからユーザー名を取得
-    const body = await req.json();
-    const { username } = body;
+    let username: string;
+    
+    // Content-Typeに基づいてリクエストボディを解析
+    const contentType = req.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      // JSONデータの場合
+      const body = await req.json();
+      username = body.username;
+    } else {
+      // フォームデータの場合
+      const formData = await req.formData();
+      username = formData.get('username') as string;
+    }
 
     if (!username) {
       return NextResponse.json(

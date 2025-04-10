@@ -7,7 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUserFromRedis } from "@/lib/redis";
 
+// SNS連携用のクライアントコンポーネントをインポート
+import SNSConnectionTab from "@/components/SNSConnectionTab";
+
 export default async function DashboardPage() {
+  // 最もシンプルな解決策
+  const defaultTab = "sns";
+
   const { userId } = await auth();
   const user = await currentUser();
   
@@ -74,7 +80,7 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="sns" className="space-y-6">
+      <Tabs defaultValue={defaultTab as string} className="space-y-6">
         <TabsList className="grid w-full md:w-auto grid-cols-2">
           <TabsTrigger value="sns">SNS Accounts</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -117,49 +123,8 @@ export default async function DashboardPage() {
         </TabsContent>
         
         <TabsContent value="sns" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Connected SNS Accounts</CardTitle>
-              <CardDescription>Your connected SNS platforms</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {connectedPlatforms.map((platform) => (
-                  <div key={platform.name} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                    <div className="space-y-1">
-                      <h3 className="font-medium">{platform.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{platform.username}</span>
-                        {platform.connected && (
-                          <span className="text-muted-foreground">
-                            {platform.followersCount?.toLocaleString() || platform.subscribersCount?.toLocaleString()} followers
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {platform.connected ? (
-                      <Badge variant="outline" className="bg-primary/10 text-primary">
-                        Connected
-                      </Badge>
-                    ) : (
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={`/dashboard/sns-accounts#${platform.name.toLowerCase().replace(/\s+/g, '')}`}>
-                          Connect
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/dashboard/sns-accounts">
-                  Manage SNS Accounts
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
+          {/* SNS連携用のクライアントコンポーネント */}
+          <SNSConnectionTab />
         </TabsContent>
       </Tabs>
     </div>

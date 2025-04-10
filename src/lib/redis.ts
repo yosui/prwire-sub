@@ -57,13 +57,25 @@ export async function getUserFromRedis(userId: string): Promise<UserData | null>
   const client = getRedisClient();
   
   try {
-    const userData = await client.get<string>(`subscriber:${userId}`);
+    // Upstash Redisでは、自動的にJSONとして取得できる
+    const userData = await client.get<UserData>(`subscriber:${userId}`);
     
     if (!userData) {
       return null;
     }
     
-    return JSON.parse(userData) as UserData;
+    // 文字列かオブジェクトかをチェックして適切に処理
+    if (typeof userData === 'string') {
+      try {
+        return JSON.parse(userData) as UserData;
+      } catch (parseError) {
+        console.error('Error parsing Redis data:', parseError);
+        return null;
+      }
+    }
+    
+    // 既にオブジェクトの場合はそのまま返す
+    return userData as UserData;
   } catch (error) {
     console.error('Error fetching user data from Redis:', error);
     return null;
@@ -75,7 +87,7 @@ export async function saveUserToRedis(userId: string, userData: UserData): Promi
   const client = getRedisClient();
   
   try {
-    await client.set(`subscriber:${userId}`, JSON.stringify(userData));
+    await client.set(`subscriber:${userId}`, userData);
     return userData;
   } catch (error) {
     console.error('Error saving user data to Redis:', error);
@@ -108,10 +120,6 @@ export async function saveTwitterInfo(
   if (!userData.platforms) {
     userData.platforms = {};
   }
-  
-  // 現在のTwitterフォロワー数（既存の場合）
-  const currentTwitterFollowers = 
-    userData.platforms.twitter?.followersCount || 0;
   
   // Twitter情報を更新
   userData.platforms.twitter = {

@@ -89,7 +89,7 @@ export default function SettingsPage() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Register this URL in your favorite RSS reader to receive PRWIRE's distribution information.
+                Register this URL in your favorite RSS reader to receive PRWIRE&apos;s distribution information.
               </p>
             </div>
           </div>
