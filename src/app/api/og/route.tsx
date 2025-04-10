@@ -9,17 +9,16 @@ export async function GET(request: Request) {
     // Get parameters for the OG image
     const username = searchParams.get('username') || '';
     
-    // Check if followers parameter exists or try to use the random value as followers
+    // Prioritize followers parameter - check explicitly first
     let followersCount = searchParams.get('followers');
     
     if (!followersCount) {
+      // Fall back to the old way - extracting from referrer
       // If there's no followers parameter, check for a numeric parameter (the random value)
-      // and use it to get the follower count from page param or Url state
       const keys = Array.from(searchParams.keys());
       for (const key of keys) {
-        if (key !== 'username' && !Number.isNaN(Number(searchParams.get(key)))) {
+        if (key !== 'username' && key !== 'r' && !Number.isNaN(Number(searchParams.get(key)))) {
           // If we find a random numeric parameter, let's take it from preview path parts
-          // This is a simplified approach - in production, you might want to fetch the actual count
           const previewPath = request.headers.get('referer') ?? '';
           const match = previewPath.match(/\/preview\/[^-]+-(\d+)/);
           if (match?.[1]) {

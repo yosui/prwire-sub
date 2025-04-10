@@ -25,12 +25,12 @@ export default function ShareModal({
   username, 
   followersCount 
 }: ShareModalProps) {
-  // Generate OG image URL with a random parameter to bypass cache
+  // Generate OG image URL with a random parameter to bypass cache and include follower count explicitly
   const randomParam = Math.floor(Math.random() * 1000000);
-  const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/og?username=${encodeURIComponent(username)}&${randomParam}`;
+  const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re'}/api/og?username=${encodeURIComponent(username)}&followers=${followersCount}&r=${randomParam}`;
   
   // Generate share URL with simplified format while keeping necessary info for metadata
-  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://prwi.re'}/preview/${username}-${followersCount}-${randomParam}`;
+  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re'}/preview/${username}-${followersCount}-${randomParam}`;
   
   // Generate share text
   const shareText = encodeURIComponent(

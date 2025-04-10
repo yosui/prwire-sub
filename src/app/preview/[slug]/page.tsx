@@ -22,11 +22,13 @@ export async function generateMetadata({
   }
   
   const username = parts[0];
+  // Get followers count from parts
+  const followersCount = parts[1] || '0';
   // We'll still keep the parts but use a simplified URL format
   const randomParam = parts[2]; 
   
-  // Create the OG image URL with simplified parameters
-  const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/og?username=${encodeURIComponent(username)}&${randomParam}`;
+  // Create the OG image URL with explicit parameters
+  const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re'}/api/og?username=${encodeURIComponent(username)}&followers=${followersCount}&r=${randomParam}`;
   
   return {
     title: `@${username}'s Verified Follower Count | PRWire`,
