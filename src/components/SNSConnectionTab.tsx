@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
@@ -13,9 +12,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-// シェアモーダルをインポート
-import ShareModal from "@/components/ShareModal";
 
 type RedisUserData = {
   userId: string;
@@ -38,13 +34,7 @@ type RedisUserData = {
 export default function SNSConnectionTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [redisData, setRedisData] = useState<RedisUserData | null>(null);
-  // シェアモーダルの状態
-  const [showShareModal, setShowShareModal] = useState(false);
-  
-  // URLパラメータを取得
-  const searchParams = useSearchParams();
-  const twitterSuccess = searchParams.get('twitter_success');
-  
+    
   // コンポーネントマウント時にユーザー情報を取得
   useEffect(() => {
     async function fetchUserData() {
@@ -56,14 +46,6 @@ export default function SNSConnectionTab() {
         }
         if (data.redisData) {
           setRedisData(data.redisData);
-          
-          // Twitter認証が成功していて、Twitterのデータが存在する場合、モーダルを表示
-          if (twitterSuccess === 'true' && data.redisData.platforms.twitter) {
-            // 少し遅延させてモーダルを表示（ユーザー体験向上のため）
-            setTimeout(() => {
-              setShowShareModal(true);
-            }, 500);
-          }
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error);
@@ -71,7 +53,7 @@ export default function SNSConnectionTab() {
     }
     
     fetchUserData();
-  }, [twitterSuccess]); 
+  }, []);
 
   // Twitter OAuth認証を開始
   async function startTwitterOAuth() {
@@ -123,13 +105,6 @@ export default function SNSConnectionTab() {
       return "Reconnect";
     }
     return `Available on ${nextAuthDate}`;
-  };
-
-  // シェアモーダルを手動で表示する関数
-  const handleShowShareModal = () => {
-    if (redisData?.platforms?.twitter) {
-      setShowShareModal(true);
-    }
   };
 
   return (
@@ -190,17 +165,6 @@ export default function SNSConnectionTab() {
                         )}
                       </Tooltip>
                     </TooltipProvider>
-                    
-                    <Button 
-                      variant="secondary" 
-                      className="w-full sm:w-auto"
-                      onClick={handleShowShareModal}
-                    >
-                      <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.14l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                      </svg>
-                      Share
-                    </Button>
                   </div>
                 </div>
               ) : (
@@ -271,15 +235,6 @@ export default function SNSConnectionTab() {
         </Card>
       </div>
 
-      {/* シェアモーダル */}
-      {redisData?.platforms?.twitter && (
-        <ShareModal
-          open={showShareModal}
-          onOpenChange={setShowShareModal}
-          username={redisData.platforms.twitter.username}
-          followersCount={redisData.platforms.twitter.followersCount}
-        />
-      )}
     </>
   );
 } 
