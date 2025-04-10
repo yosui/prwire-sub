@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+// シェアモーダルをインポート
+import ShareModal from "@/components/ShareModal";
 
 type RedisUserData = {
   userId: string;
@@ -35,6 +38,12 @@ type RedisUserData = {
 export default function SNSConnectionTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [redisData, setRedisData] = useState<RedisUserData | null>(null);
+  // シェアモーダルの状態
+  const [showShareModal, setShowShareModal] = useState(false);
+  
+  // URLパラメータを取得
+  const searchParams = useSearchParams();
+  const twitterSuccess = searchParams.get('twitter_success');
   
   // コンポーネントマウント時にユーザー情報を取得
   useEffect(() => {
@@ -47,6 +56,14 @@ export default function SNSConnectionTab() {
         }
         if (data.redisData) {
           setRedisData(data.redisData);
+          
+          // Twitter認証が成功していて、Twitterのデータが存在する場合、モーダルを表示
+          if (twitterSuccess === 'true' && data.redisData.platforms.twitter) {
+            // 少し遅延させてモーダルを表示（ユーザー体験向上のため）
+            setTimeout(() => {
+              setShowShareModal(true);
+            }, 500);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error);
@@ -54,7 +71,7 @@ export default function SNSConnectionTab() {
     }
     
     fetchUserData();
-  }, []); 
+  }, [twitterSuccess]); 
 
   // Twitter OAuth認証を開始
   async function startTwitterOAuth() {
@@ -108,6 +125,13 @@ export default function SNSConnectionTab() {
     return `Available on ${nextAuthDate}`;
   };
 
+  // シェアモーダルを手動で表示する関数
+  const handleShowShareModal = () => {
+    if (redisData?.platforms?.twitter) {
+      setShowShareModal(true);
+    }
+  };
+
   return (
     <>
       <h2 className="text-2xl font-bold mt-8 mb-4">Connect Your SNS Accounts</h2>
@@ -144,27 +168,40 @@ export default function SNSConnectionTab() {
                   <p className="text-sm">
                     <span className="font-medium">Verified on:</span> {new Date(redisData?.platforms.twitter?.verifiedAt || '').toLocaleString('en-US')}
                   </p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <Button
-                            variant="outline"
-                            className="mt-2 w-full sm:w-auto"
-                            onClick={startTwitterOAuth}
-                            disabled={isLoading || !canReauthTwitter}
-                          >
-                            {getReauthButtonText(canReauthTwitter, nextTwitterAuthDate)}
-                          </Button>
-                        </div>
-                      </TooltipTrigger>
-                      {!canReauthTwitter && (
-                        <TooltipContent>
-                          <p>You can reconnect one month after your verification date.<br />Next verification available after {nextTwitterAuthDate}.</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </TooltipProvider>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <Button
+                              variant="outline"
+                              className="w-full sm:w-auto"
+                              onClick={startTwitterOAuth}
+                              disabled={isLoading || !canReauthTwitter}
+                            >
+                              {getReauthButtonText(canReauthTwitter, nextTwitterAuthDate)}
+                            </Button>
+                          </div>
+                        </TooltipTrigger>
+                        {!canReauthTwitter && (
+                          <TooltipContent>
+                            <p>You can reconnect one month after your verification date.<br />Next verification available after {nextTwitterAuthDate}.</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <Button 
+                      variant="secondary" 
+                      className="w-full sm:w-auto"
+                      onClick={handleShowShareModal}
+                    >
+                      <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.14l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                      Share
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -233,6 +270,16 @@ export default function SNSConnectionTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* シェアモーダル */}
+      {redisData?.platforms?.twitter && (
+        <ShareModal
+          open={showShareModal}
+          onOpenChange={setShowShareModal}
+          username={redisData.platforms.twitter.username}
+          followersCount={redisData.platforms.twitter.followersCount}
+        />
+      )}
     </>
   );
 } 

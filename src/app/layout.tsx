@@ -9,8 +9,31 @@ import { Footer } from "@/components/Footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PRWIRE Subscriber",
-  description: "Verified subscriber system for PR distribution",
+  title: "PRWi.re",
+  description: "Verify Your Power for The People",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re'),
+  openGraph: {
+    title: "PRWi.re",
+    description: "Verify Your Power for The People",
+    url: "https://verify.prwi.re",
+    siteName: "PRWIRE Subscriber",
+    locale: "ja_JP",
+    type: "website",
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "PRWIRE Subscriber",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PRWi.re",
+    description: "Verify Your Power for The People",
+    images: ["/og-default.png"],
+  },
 };
 
 export default function RootLayout({
@@ -20,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="ja">
         <body className={inter.className}>
         <NavBar />
           {children}
