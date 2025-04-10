@@ -9,11 +9,18 @@ export const revalidate = 60; // 1分間キャッシュ
 
 export async function GET(request: Request) {
   try {
-    // レスポンスヘッダーを設定
+    // レスポンスヘッダーを設定 - CORSとキャッシュ設定を適切に
     const headers = {
       'Content-Type': 'image/png',
-      'Cache-Control': 'public, max-age=60, s-maxage=60',
+      'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
     };
+    
+    // リクエスト情報をログに記録
+    console.log(`[OG API] Request URL: ${request.url}`);
+    console.log(`[OG API] Referer: ${request.headers.get('referer') || 'none'}`);
+    console.log(`[OG API] User-Agent: ${request.headers.get('user-agent') || 'none'}`);
     
     const { searchParams } = new URL(request.url);
     
@@ -46,8 +53,11 @@ export async function GET(request: Request) {
     // フォロワー数を整形
     const formattedFollowers = Number.parseInt(followersCount, 10).toLocaleString();
     
+    // 生成するOG画像の情報をログに記録
+    console.log(`[OG API] Generating image for username: ${username}, followers: ${followersCount}`);
+    
     // ImageResponseを作成し、明示的にヘッダーを渡す
-    return new ImageResponse(
+    const response = new ImageResponse(
       (
         <div
           style={{
@@ -248,12 +258,20 @@ export async function GET(request: Request) {
         headers: headers,
       },
     );
+    
+    // 成功のログを記録
+    console.log(`[OG API] Successfully generated image for ${username}`);
+    return response;
   } catch (error) {
-    console.error('Error generating OG image:', error);
+    // エラーログを詳細に記録
+    console.error('[OG API] Error generating OG image:', error);
+    
+    // エラーの詳細を含めたレスポンス
     return new Response(`Error generating OG image: ${error}`, {
       status: 500,
       headers: {
         'Content-Type': 'text/plain',
+        'Cache-Control': 'no-cache, no-store',
       },
     });
   }

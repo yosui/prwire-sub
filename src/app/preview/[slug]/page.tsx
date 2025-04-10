@@ -45,6 +45,10 @@ export async function generateMetadata({
   // 最終的なURLを文字列として取得
   const ogImageUrlString = ogImageUrl.toString();
   
+  // コンソールにメタデータの生成を記録
+  console.log(`[OGP] Generating metadata for user: ${username}, followers: ${followersCount}`);
+  console.log(`[OGP] OG Image URL: ${ogImageUrlString}`);
+  
   return {
     title: `@${username}'s Verified Follower Count | PRWire`,
     description: `See @${username}'s verified follower count on X, verified by PRWire.`,
@@ -82,18 +86,62 @@ export default async function PreviewPage({
   // パラメータをawaitで取得
   const { slug } = await params;
   
-  // Twitter/X Bot または他のクローラーの場合は静的ページを表示
-  const isCrawler = userAgent.toLowerCase().includes('twitterbot') || 
-                    userAgent.toLowerCase().includes('bot') ||
-                    userAgent.toLowerCase().includes('crawler') ||
-                    userAgent.toLowerCase().includes('spider');
+  // User-Agentとスラグをログに記録（デバッグ用）
+  console.log(`[Preview] User-Agent: ${userAgent}`);
+  console.log(`[Preview] Slug: ${slug}`);
+  
+  // Twitterの様々なボットを確実に検出
+  const twitterBots = [
+    'twitterbot',
+    'twitter',
+    'x bot',
+    'x-bot',
+    'xbot',
+  ];
+  
+  // 一般的なクローラーの配列
+  const otherCrawlers = [
+    'bot',
+    'crawler',
+    'spider',
+    'slurp',
+    'googlebot',
+    'bingbot',
+    'yandexbot',
+    'duckduckbot',
+    'facebookexternalhit',
+    'linkedinbot',
+    'slackbot',
+    'discordbot',
+    'telegrambot',
+    'whatsapp',
+  ];
+  
+  // User-Agent文字列を小文字に変換して保存
+  const userAgentLower = userAgent.toLowerCase();
+  
+  // Twitter/X Botの検出
+  const isTwitterBot = twitterBots.some(bot => userAgentLower.includes(bot));
+  
+  // その他のクローラーの検出
+  const isOtherCrawler = otherCrawlers.some(crawler => userAgentLower.includes(crawler));
+  
+  // クローラーかどうかの最終判定
+  const isCrawler = isTwitterBot || isOtherCrawler;
+  
+  // デバッグログ
+  console.log(`[Preview] Is Twitter Bot: ${isTwitterBot}`);
+  console.log(`[Preview] Is Other Crawler: ${isOtherCrawler}`);
+  console.log(`[Preview] Final Crawler Decision: ${isCrawler}`);
   
   // クローラーでない場合はリダイレクト
   if (!isCrawler) {
+    console.log(`[Preview] Redirecting non-crawler to home page`);
     redirect('/');
   }
   
   // クローラーの場合のみ静的ページを表示（通常のユーザーはここに到達しない）
+  console.log(`[Preview] Showing static page for crawler`);
   const parts = slug.split('-');
   const username = parts[0];
   const followersCount = Number.parseInt(parts[1] || '0', 10);
