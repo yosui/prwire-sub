@@ -143,4 +143,51 @@ export async function saveTwitterInfo(
   
   // 更新したデータをRedisに保存
   return saveUserToRedis(userId, userData);
+}
+
+// TwitterのOAuth PKCE認証用のcodeVerifier情報を保存（一時的に保持）
+export async function saveTwitterCodeVerifier(
+  state: string,
+  codeVerifier: string,
+  expiresInSeconds = 600 // デフォルトで10分間有効
+): Promise<void> {
+  const client = getRedisClient();
+  
+  try {
+    // oauth:twitter:state:{state} のキーでcodeVerifierを保存
+    // 有効期限を設定（10分後に自動削除）
+    await client.set(`oauth:twitter:state:${state}`, codeVerifier, {
+      ex: expiresInSeconds
+    });
+    
+    console.log(`Twitter code verifier saved for state: ${state.substring(0, 10)}...`);
+  } catch (error) {
+    console.error('Error saving Twitter code verifier to Redis:', error);
+    throw error;
+  }
+}
+
+// 保存したTwitterのOAuth PKCE認証用codeVerifierを取得
+export async function getTwitterCodeVerifier(state: string): Promise<string | null> {
+  const client = getRedisClient();
+  
+  try {
+    // oauth:twitter:state:{state} のキーからcodeVerifierを取得
+    const codeVerifier = await client.get<string>(`oauth:twitter:state:${state}`);
+    
+    if (!codeVerifier) {
+      console.error(`No code verifier found for state: ${state.substring(0, 10)}...`);
+      return null;
+    }
+    
+    console.log(`Retrieved code verifier for state: ${state.substring(0, 10)}...`);
+    
+    // 使用後は削除（1回限り使用可能）
+    await client.del(`oauth:twitter:state:${state}`);
+    
+    return codeVerifier;
+  } catch (error) {
+    console.error('Error retrieving Twitter code verifier from Redis:', error);
+    return null;
+  }
 } 

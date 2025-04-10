@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { OAuth } from 'oauth';
+import { saveTwitterCodeVerifier } from './redis';
 
 type TwitterUserPublicMetrics = {
   followers_count: number;
@@ -71,27 +72,29 @@ export async function getTwitterAuthUrl(): Promise<string> {
   console.log("- CLIENT_ID:", clientId ? `${clientId.substring(0, 5)}...` : 'Missing');
   console.log("- APP_URL:", process.env.NEXT_PUBLIC_APP_URL);
 
-  // リダイレクトURL
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`;
+  // リダイレクトURL - 末尾のスラッシュを処理
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const redirectUri = `${normalizedBaseUrl}/api/auth/twitter/callback`;
   
   // スコープ (ユーザー情報とツイート読み取り)
   const scopes = ['users.read', 'tweet.read'].join(' ');
   
-  // 固定のcode_verifier（開発中のみ使用し、本番環境では動的に生成すべき）
-  const codeVerifier = 'TLUMJp1gtiP1JUGtT-Uw-PdFtMZRQqxBpUMPLA0_y1S5kGe5vYhU8yQlHu2cG1nGKXW1q';
+  // code_verifierを動的に生成（セキュリティ向上のため）
+  const codeVerifier = generateRandomString(64);
   
   // セキュアハッシュをBase64url形式に変換
   const codeChallenge = await generateCodeChallenge(codeVerifier);
   
-  // グローバル変数に保存
-  // @ts-expect-error - global.twitterCodeVerifier is set at runtime but not typed in the global namespace
-  global.twitterCodeVerifier = codeVerifier;
-  console.log("Code verifier set:", codeVerifier);
-  console.log("Code challenge generated:", codeChallenge);
-
+  // グローバル変数に保存する代わりにRedisに保存
   // 状態パラメータ (CSRF防止用)
   const state = generateRandomString(32);
+  console.log("Code verifier set:", codeVerifier);
+  console.log("Code challenge generated:", codeChallenge);
   console.log("State parameter:", state);
+  
+  // stateとcodeVerifierをRedisに保存（10分間有効）
+  await saveTwitterCodeVerifier(state, codeVerifier);
   
   // 認証URLを構築
   const authUrl = new URL(TWITTER_OAUTH2_AUTHORIZE_URL);

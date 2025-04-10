@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { saveTwitterInfo } from '@/lib/redis';
+import { saveTwitterInfo, getTwitterCodeVerifier } from '@/lib/redis';
 import axios from 'axios';
 import { TWITTER_OAUTH2_TOKEN_URL, TWITTER_API_BASE_URL } from '@/lib/twitter-api';
 
@@ -61,10 +61,18 @@ export async function GET(req: NextRequest) {
     // クエリパラメータを確認
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
+    const state = searchParams.get('state');
     
     if (!code) {
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=missing_code&tab=sns`
+      );
+    }
+    
+    if (!state) {
+      console.error('Missing state parameter');
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=missing_state&tab=sns`
       );
     }
     
@@ -82,12 +90,22 @@ export async function GET(req: NextRequest) {
         throw new Error('Twitter API credentials are not configured');
       }
       
-      // リダイレクトURI
-      const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`;
+      // リダイレクトURI - 末尾のスラッシュを処理
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+      const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      const redirectUri = `${normalizedBaseUrl}/api/auth/twitter/callback`;
       
-      // @ts-expect-error - global.twitterCodeVerifier is set at runtime but not typed in the global namespace
-      const codeVerifier = global.twitterCodeVerifier || 'TLUMJp1gtiP1JUGtT-Uw-PdFtMZRQqxBpUMPLA0_y1S5kGe5vYhU8yQlHu2cG1nGKXW1q';
-      console.log("Using code verifier:", codeVerifier);
+      // グローバル変数の代わりにRedisからcode verifierを取得
+      const codeVerifier = await getTwitterCodeVerifier(state);
+      
+      if (!codeVerifier) {
+        console.error('Code verifier not found for the provided state');
+        return NextResponse.redirect(
+          `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=invalid_state&tab=sns`
+        );
+      }
+      
+      console.log("Using code verifier:", `${codeVerifier.substring(0, 10)}...`);
       
       // 認証コードをアクセストークンと交換
       try {
