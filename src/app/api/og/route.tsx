@@ -10,9 +10,10 @@ export const revalidate = 60; // 1分間キャッシュ
 export async function GET(request: Request) {
   try {
     // レスポンスヘッダーを設定
-    const headers = new Headers();
-    headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
-    headers.set('Content-Type', 'image/png');
+    const headers = {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=60, s-maxage=60',
+    };
     
     const { searchParams } = new URL(request.url);
     
@@ -45,6 +46,7 @@ export async function GET(request: Request) {
     // フォロワー数を整形
     const formattedFollowers = Number.parseInt(followersCount, 10).toLocaleString();
     
+    // ImageResponseを作成し、明示的にヘッダーを渡す
     return new ImageResponse(
       (
         <div
@@ -243,12 +245,16 @@ export async function GET(request: Request) {
       {
         width: 1200,
         height: 630,
+        headers: headers,
       },
     );
   } catch (error) {
     console.error('Error generating OG image:', error);
     return new Response(`Error generating OG image: ${error}`, {
       status: 500,
+      headers: {
+        'Content-Type': 'text/plain',
+      },
     });
   }
 } 

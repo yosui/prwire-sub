@@ -32,8 +32,18 @@ export async function generateMetadata({
   // We'll still keep the parts but use a simplified URL format
   const randomParam = parts[2]; 
   
-  // Create the OG image URL with explicit parameters
-  const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re'}/api/og?username=${encodeURIComponent(username)}&followers=${followersCount}&r=${randomParam}`;
+  // 確実に絶対URLを使用するために、baseURLを設定
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re';
+  // URLオブジェクトを使用して絶対URLを確実に構築
+  const ogImageUrl = new URL('/api/og', baseUrl);
+  
+  // クエリパラメータを設定
+  ogImageUrl.searchParams.set('username', username);
+  ogImageUrl.searchParams.set('followers', followersCount);
+  ogImageUrl.searchParams.set('r', randomParam);
+  
+  // 最終的なURLを文字列として取得
+  const ogImageUrlString = ogImageUrl.toString();
   
   return {
     title: `@${username}'s Verified Follower Count | PRWire`,
@@ -43,7 +53,7 @@ export async function generateMetadata({
       description: `See @${username}'s verified follower count on X, verified by PRWire.`,
       images: [
         {
-          url: ogImageUrl,
+          url: ogImageUrlString,
           width: 1200,
           height: 630,
           alt: `@${username}'s verified follower count`,
@@ -54,7 +64,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title: `@${username}'s Verified Follower Count | PRWire`,
       description: `See @${username}'s verified follower count on X, verified by PRWire.`,
-      images: [ogImageUrl],
+      images: [ogImageUrlString],
       creator: `@${username}`,
     },
   };

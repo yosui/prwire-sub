@@ -25,12 +25,20 @@ export default function ShareModal({
   username, 
   followersCount 
 }: ShareModalProps) {
-  // Generate OG image URL with a random parameter to bypass cache and include follower count explicitly
+  // 乱数パラメータの生成
   const randomParam = Math.floor(Math.random() * 1000000);
-  const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re'}/api/og?username=${encodeURIComponent(username)}&followers=${followersCount}&r=${randomParam}`;
   
-  // Generate share URL with simplified format while keeping necessary info for metadata
-  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re'}/preview/${username}-${followersCount}-${randomParam}`;
+  // baseUrlの設定
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://verify.prwi.re';
+  
+  // OG画像のURL構築
+  const ogImageUrl = new URL('/api/og', baseUrl);
+  ogImageUrl.searchParams.set('username', username);
+  ogImageUrl.searchParams.set('followers', followersCount.toString());
+  ogImageUrl.searchParams.set('r', randomParam.toString());
+  
+  // シェアURLの構築
+  const shareUrl = `${baseUrl}/preview/${username}-${followersCount}-${randomParam}`;
   
   // Generate share text
   const shareText = encodeURIComponent(
@@ -59,7 +67,7 @@ export default function ShareModal({
             <div className={`relative ${imageLoaded ? 'block' : 'hidden'}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src={ogImageUrl}
+                src={ogImageUrl.toString()}
                 alt={`@${username}'s verified follower count`}
                 className="w-full h-auto"
                 onLoad={() => setImageLoaded(true)}
