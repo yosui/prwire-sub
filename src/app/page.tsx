@@ -4,8 +4,7 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { ArrowRight, Rss, ChevronDown, Twitter } from "lucide-react"
-import { motion, useInView, useAnimation } from "framer-motion"
+import { ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@clerk/nextjs"
 
@@ -127,50 +126,6 @@ function HoverGlow({
       />
       {children}
     </div>
-  )
-}
-
-// ScrollReveal Component
-function ScrollReveal({
-  children,
-  delay = 0.2,
-  duration = 0.5,
-  once = true,
-}: {
-  children: React.ReactNode
-  delay?: number
-  duration?: number
-  once?: boolean
-}) {
-  const controls = useAnimation()
-  const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once })
-  const [hasAnimated, setHasAnimated] = useState(false)
-
-  useEffect(() => {
-    if (isInView && !hasAnimated) {
-      controls.start("visible")
-      if (once) {
-        setHasAnimated(true)
-      }
-    } else if (!isInView && !once && hasAnimated) {
-      controls.start("hidden")
-      setHasAnimated(false)
-    }
-  }, [isInView, controls, once, hasAnimated])
-
-  return (
-    <motion.div
-      ref={ref}
-      initial="hidden"
-      animate={controls}
-      variants={{
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration, delay } },
-      }}
-    >
-      {children}
-    </motion.div>
   )
 }
 
