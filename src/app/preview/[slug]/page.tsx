@@ -1,8 +1,13 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import Link from 'next/link';
 
 // 型定義を追加
 export type SlugParamsType = Promise<{ slug: string }>;
+
+// Force static generation for better crawler access
+export const dynamic = 'force-static';
 
 // Generate metadata for the page with OG tags
 export async function generateMetadata({
@@ -55,9 +60,44 @@ export async function generateMetadata({
   };
 }
 
-// Required Page component - 同様に更新
-export default function PreviewPage() {
-  // Redirect to home page when someone visits this URL directly
-  redirect('/');
+// Required Page component - サーバーコンポーネントを非同期に変更
+export default async function PreviewPage({
+  params,
+}: {
+  params: SlugParamsType;
+}) {
+  const headersList = await headers();
+  const userAgent = headersList.get('user-agent') || '';
+  
+  // パラメータをawaitで取得
+  const { slug } = await params;
+  
+  // Twitter/X Bot または他のクローラーの場合は静的ページを表示
+  const isCrawler = userAgent.toLowerCase().includes('twitterbot') || 
+                    userAgent.toLowerCase().includes('bot') ||
+                    userAgent.toLowerCase().includes('crawler') ||
+                    userAgent.toLowerCase().includes('spider');
+  
+  // クローラーでない場合はリダイレクト
+  if (!isCrawler) {
+    redirect('/');
+  }
+  
+  // クローラーの場合のみ静的ページを表示（通常のユーザーはここに到達しない）
+  const parts = slug.split('-');
+  const username = parts[0];
+  const followersCount = Number.parseInt(parts[1] || '0', 10);
+  
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
+      <h1 className="text-3xl font-bold mb-4">PRWire Follower Verification</h1>
+      <div className="mb-6">
+        <p className="text-xl font-semibold">@{username}</p>
+        <p className="text-3xl font-bold text-blue-500">{followersCount.toLocaleString()} followers</p>
+      </div>
+      <p className="text-lg mb-8">検証済みのフォロワー数です</p>
+      <Link href="/" className="text-blue-500 underline">ホームページに戻る</Link>
+    </div>
+  );
 }
 

@@ -1,9 +1,19 @@
 import { ImageResponse } from 'next/og';
 
+// エッジランタイムとフォース動的レンダリングを設定
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+
+// キャッシュ設定 - クローラー用に短時間のキャッシュを許可
+export const revalidate = 60; // 1分間キャッシュ
 
 export async function GET(request: Request) {
   try {
+    // レスポンスヘッダーを設定
+    const headers = new Headers();
+    headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+    headers.set('Content-Type', 'image/png');
+    
     const { searchParams } = new URL(request.url);
     
     // Get parameters for the OG image
